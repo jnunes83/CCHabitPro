@@ -1,15 +1,18 @@
 """
-This document regulates our user guidance. It represents the menu or the main navigation.
-It imports the library 'questionary' as the Command Line Interface (CLI) that guides the user through the program.
-It also imports the initialisation.py doc which launches the core functionalities of the program.
+Main module for CCHabitPro application.
 """
 import questionary
 import initialisation
+from BLEHandler import BLEHandler
+from Modeling import HabitModel
+import pandas as pd
+from User import UserClass
+from sklearn.preprocessing import LabelEncoder
 
-# CREATES THE DATABASE.
+# Creates the database.
 initialisation.launch_database()
 
-# PROGRAM STARTS AND INTRO MESSAGE INTRODUCES THE APP.
+# Program starts with an intro message.
 intro_message = "\n******************************\n" \
                 "Welcome to CCHabitPro! The Habit Tracker for Chronic Diseases\n" \
                 "You can use this app to track your habits for a healthier life.\n" \
@@ -41,7 +44,15 @@ predefined_habits = {
     ]
 }
 
-# ASKS THE USER TO LOGIN OR REGISTER.
+# Initialize BLE and Model Handler
+ble_handler = BLEHandler()
+habit_model = HabitModel()
+
+# Scan for devices
+available_devices = ble_handler.scan_devices()
+print(f"Available devices: {available_devices}")
+
+# Ask the user to login or register.
 first_question = questionary.select(
     "Is this your first time here or have you been here before? ", choices=[
         "Register",
@@ -76,12 +87,40 @@ elif first_question == "Register":
         for habit in habits:
             new_user.create_habit(habit['name'], category, habit['periodicity'])
 
-# Placeholder for the menu function, which will allow users to create habits
+# Example to connect to a device (replace 'Device_Name' with actual name)
+ble_handler.connect_to_device('Device_Name')
+
+# Data Collection and Preprocessing Logic
+def collect_and_preprocess_data():
+    # Simulated data collection
+    data = {
+        'age': [25, 30, 22, 35, 40, 28, 50, 45],
+        'sex': ['Male', 'Female', 'Female', 'Male', 'Female', 'Male', 'Male', 'Female'],
+        'height': [175, 160, 165, 180, 170, 178, 172, 158],
+        'weight': [70, 60, 55, 85, 75, 68, 80, 62],
+        'habit_frequency': ['Daily', 'Daily', 'Weekly', 'Daily', 'Weekly', 'Daily', 'Daily', 'Weekly'],
+        'success': [1, 0, 1, 1, 0, 1, 1, 0]  # Binary target variable
+    }
+    
+    df = pd.DataFrame(data)
+    
+    # Preprocessing
+    label_encoder = LabelEncoder()
+    df['sex'] = label_encoder.fit_transform(df['sex'])  # Encode 'sex' as numerical
+    df['habit_frequency'] = label_encoder.fit_transform(df['habit_frequency'])  # Encode habit frequency
+
+    return df
+
+# Collect and preprocess data
+training_data = collect_and_preprocess_data()
+print("Training Data:")
+print(training_data)
+
+# Train the model with the processed data
+habit_model.train_model(training_data)
+
+# Placeholder for the menu function
 def menu():
-    """
-    This is the main menu of our program.
-    It asks and prompts the user what they want to do and guides them through the functionalities.
-    """
     second_question = questionary.select("What do you want to do? ",
                                          choices=[
                                              "View my habits",
@@ -91,13 +130,11 @@ def menu():
     if second_question == "View my habits":
         # Call view habits function (not implemented in this scope)
         pass
-    
     elif second_question == "Analyze my habits":
         # Call analyze habits function (not implemented in this scope)
         pass
-    
     elif second_question == "Exit Program":
         print("\nSee you soon!\n")
 
-# EXECUTES THE FUNCTION DEFINED ABOVE AND STARTS THE USER GUIDANCE.
+# Executes the function defined above and starts the user guidance.
 menu()
